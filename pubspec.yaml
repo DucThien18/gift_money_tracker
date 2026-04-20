@@ -14,8 +14,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
-  isar: ^3.1.0+1
-  isar_flutter_libs: ^3.1.0+1
+  isar: 4.0.0-dev.14
+  isar_flutter_libs: 4.0.0-dev.14
   path_provider: ^2.1.5
   file_picker: ^8.1.2
   excel: ^4.0.6
@@ -29,7 +29,8 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
   build_runner: ^2.4.13
-  isar_generator: ^3.1.0+1
+  mocktail: ^1.0.4
+  plugin_platform_interface: ^2.1.8
   riverpod_generator: ^2.4.0
 
 flutter:

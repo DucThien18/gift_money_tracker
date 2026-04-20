@@ -9,9 +9,10 @@ class GiftMoneyTrackerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gift Money Tracker',
+      title: 'Nhật ký tiền mừng',
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.light,
       onGenerateRoute: AppRouter.onGenerateRoute,
       initialRoute: '/',
       debugShowCheckedModeBanner: false,

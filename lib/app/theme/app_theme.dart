@@ -12,8 +12,47 @@ abstract final class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-      appBarTheme: const AppBarTheme(centerTitle: false, elevation: 0),
+      scaffoldBackgroundColor: AppColors.background,
+      canvasColor: Colors.transparent,
+      dividerColor: Colors.transparent,
+      appBarTheme: const AppBarTheme(
+        centerTitle: false,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: AppColors.textPrimary,
+      ),
+      snackBarTheme: const SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.glassFillStrong,
+        hintStyle: const TextStyle(color: AppColors.textHint),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: AppColors.glassBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: AppColors.glassBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(
+            color: AppColors.accentBorder,
+            width: 1.2,
+          ),
+        ),
+      ),
     );
   }
 

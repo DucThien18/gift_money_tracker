@@ -2,7 +2,8 @@ import 'package:flutter/widgets.dart';
 
 import 'app/bootstrap/app_bootstrap.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(AppBootstrap.createApp());
+  final app = await AppBootstrap.createApp();
+  runApp(app);
 }
