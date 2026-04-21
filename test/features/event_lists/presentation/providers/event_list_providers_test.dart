@@ -33,6 +33,16 @@ void main() {
         createdAt: DateTime(2026, 4, 1),
         updatedAt: DateTime(2026, 4, 1),
       ),
+      EventListEntity(
+        id: 3,
+        code: 'EV-ARCHIVED',
+        name: 'Le ky niem cu',
+        description: 'Da luu tru',
+        eventDate: DateTime(2026, 3, 10),
+        isArchived: true,
+        createdAt: DateTime(2026, 3, 1),
+        updatedAt: DateTime(2026, 3, 5),
+      ),
     ]);
 
     guestRepository = FakeGuestRecordRepository(<GuestRecordEntity>[
@@ -66,6 +76,16 @@ void main() {
         createdAt: DateTime(2026, 4, 4),
         updatedAt: DateTime(2026, 4, 4),
       ),
+      GuestRecordEntity(
+        id: 4,
+        eventListId: 3,
+        fullName: 'Le Cu',
+        note: 'Luu tru',
+        amount: 900000,
+        isDebtPaid: true,
+        createdAt: DateTime(2026, 3, 4),
+        updatedAt: DateTime(2026, 3, 4),
+      ),
     ]);
 
     container = ProviderContainer(
@@ -88,6 +108,24 @@ void main() {
     expect(result.first.name, 'Dam cuoi Lan Anh');
   });
 
+  test('visibleEventListsProvider mac dinh an su kien da luu tru', () async {
+    final List<EventListEntity> result = await container.read(
+      visibleEventListsProvider.future,
+    );
+
+    expect(result.map((EventListEntity item) => item.id), <int>[1, 2]);
+  });
+
+  test('filteredEventListsProvider hien ca su kien da luu tru khi bat toggle', () async {
+    container.read(eventListShowArchivedProvider.notifier).state = true;
+
+    final List<EventListEntity> result = await container.read(
+      filteredEventListsProvider.future,
+    );
+
+    expect(result.map((EventListEntity item) => item.id), <int>[1, 2, 3]);
+  });
+
   test('eventListDashboardSummaryProvider tong hop dung so lieu', () async {
     final EventListDashboardSummary summary = await container.read(
       eventListDashboardSummaryProvider.future,
@@ -96,6 +134,46 @@ void main() {
     expect(summary.eventCount, 2);
     expect(summary.guestCount, 3);
     expect(summary.totalAmount, 1000000);
+  });
+
+  test('eventListActionController archive va restore cap nhat trang thai', () async {
+    final EventListActionController controller = container.read(
+      eventListActionControllerProvider.notifier,
+    );
+    final EventListEntity original = await container.read(
+      eventListDetailsProvider(1).future,
+    ) as EventListEntity;
+
+    final EventListEntity archived = await controller.archive(original);
+    final List<EventListEntity> visibleAfterArchive = await container.read(
+      visibleEventListsProvider.future,
+    );
+
+    expect(archived.isArchived, isTrue);
+    expect(
+      visibleAfterArchive.any((EventListEntity item) => item.id == archived.id),
+      isFalse,
+    );
+
+    container.read(eventListShowArchivedProvider.notifier).state = true;
+    final List<EventListEntity> withArchived = await container.read(
+      filteredEventListsProvider.future,
+    );
+    expect(
+      withArchived.firstWhere((EventListEntity item) => item.id == 1).isArchived,
+      isTrue,
+    );
+
+    final EventListEntity restored = await controller.restore(archived);
+    final List<EventListEntity> visibleAfterRestore = await container.read(
+      visibleEventListsProvider.future,
+    );
+
+    expect(restored.isArchived, isFalse);
+    expect(
+      visibleAfterRestore.any((EventListEntity item) => item.id == restored.id),
+      isTrue,
+    );
   });
 
   test('eventListActionController update cap nhat thong tin su kien', () async {
@@ -240,6 +318,11 @@ class FakeGuestRecordRepository implements GuestRecordRepository {
   @override
   Future<void> delete(int id) async {
     _items.removeWhere((GuestRecordEntity item) => item.id == id);
+  }
+
+  @override
+  Future<void> deleteMany(List<int> ids) async {
+    _items.removeWhere((GuestRecordEntity item) => ids.contains(item.id));
   }
 
   @override

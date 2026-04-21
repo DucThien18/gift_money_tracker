@@ -57,6 +57,7 @@ final deleteEventListUsecaseProvider = Provider<DeleteEventListUsecase>((ref) {
 });
 
 final eventListSearchQueryProvider = StateProvider<String>((ref) => '');
+final eventListShowArchivedProvider = StateProvider<bool>((ref) => false);
 
 final eventListSearchServiceProvider = Provider<SearchService>((ref) {
   return const SearchService();
@@ -77,13 +78,37 @@ final allEventListsProvider = FutureProvider<List<EventListEntity>>((
   return eventLists;
 });
 
+final visibleEventListsProvider = FutureProvider<List<EventListEntity>>((
+  ref,
+) async {
+  final bool showArchived = ref.watch(eventListShowArchivedProvider);
+  final List<EventListEntity> eventLists = await ref.watch(
+    allEventListsProvider.future,
+  );
+  if (showArchived) {
+    return eventLists;
+  }
+  return eventLists
+      .where((EventListEntity eventList) => !eventList.isArchived)
+      .toList();
+});
+
+final archivedEventCountProvider = FutureProvider<int>((ref) async {
+  final List<EventListEntity> eventLists = await ref.watch(
+    allEventListsProvider.future,
+  );
+  return eventLists
+      .where((EventListEntity eventList) => eventList.isArchived)
+      .length;
+});
+
 final filteredEventListsProvider = FutureProvider<List<EventListEntity>>((
   ref,
 ) async {
   final String keyword = ref.watch(eventListSearchQueryProvider);
   final SearchService searchService = ref.watch(eventListSearchServiceProvider);
   final List<EventListEntity> eventLists = await ref.watch(
-    allEventListsProvider.future,
+    visibleEventListsProvider.future,
   );
   return searchService.filterEventLists(
     eventLists: eventLists,
@@ -148,7 +173,7 @@ final eventListOverviewProvider = FutureProvider.family<EventListOverview, int>(
 final eventListDashboardSummaryProvider =
     FutureProvider<EventListDashboardSummary>((ref) async {
       final List<EventListEntity> eventLists = await ref.watch(
-        allEventListsProvider.future,
+        visibleEventListsProvider.future,
       );
       if (eventLists.isEmpty) {
         return const EventListDashboardSummary(
@@ -213,6 +238,7 @@ class EventListActionController extends StateNotifier<AsyncValue<void>> {
           name: trimmedName,
           description: _normalizeDescription(description),
           eventDate: eventDate,
+          isArchived: false,
           createdAt: now,
           updatedAt: now,
         ),
@@ -244,6 +270,7 @@ class EventListActionController extends StateNotifier<AsyncValue<void>> {
           name: trimmedName,
           description: _normalizeDescription(description),
           eventDate: eventDate,
+          isArchived: eventList.isArchived,
           createdAt: eventList.createdAt,
           updatedAt: DateTime.now(),
         ),
@@ -274,8 +301,46 @@ class EventListActionController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  Future<EventListEntity> archive(EventListEntity eventList) {
+    return _setArchived(eventList, isArchived: true);
+  }
+
+  Future<EventListEntity> restore(EventListEntity eventList) {
+    return _setArchived(eventList, isArchived: false);
+  }
+
+  Future<EventListEntity> _setArchived(
+    EventListEntity eventList, {
+    required bool isArchived,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      final EventListEntity updated = await ref.read(updateEventListUsecaseProvider)(
+        EventListEntity(
+          id: eventList.id,
+          code: eventList.code,
+          name: eventList.name,
+          description: eventList.description,
+          eventDate: eventList.eventDate,
+          isArchived: isArchived,
+          createdAt: eventList.createdAt,
+          updatedAt: DateTime.now(),
+        ),
+      );
+
+      _refreshCollections(updated.id);
+      state = const AsyncData(null);
+      return updated;
+    } catch (error, stackTrace) {
+      state = AsyncError(error, stackTrace);
+      rethrow;
+    }
+  }
+
   void _refreshCollections(int eventListId) {
     ref.invalidate(allEventListsProvider);
+    ref.invalidate(visibleEventListsProvider);
+    ref.invalidate(archivedEventCountProvider);
     ref.invalidate(filteredEventListsProvider);
     ref.invalidate(eventListDetailsProvider(eventListId));
     ref.invalidate(eventListOverviewProvider(eventListId));

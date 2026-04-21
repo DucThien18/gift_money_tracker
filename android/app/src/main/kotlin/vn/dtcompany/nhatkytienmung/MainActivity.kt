@@ -1,4 +1,4 @@
-package com.example.gift_money_tracker
+package vn.dtcompany.nhatkytienmung
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -47,6 +47,7 @@ class EventListRepositoryImpl implements EventListRepository {
       ..name = entity.name
       ..eventDate = entity.eventDate
       ..description = entity.description
+      ..isArchived = entity.isArchived
       ..createdAt = entity.createdAt
       ..updatedAt = entity.updatedAt;
     return model;
@@ -59,6 +60,7 @@ class EventListRepositoryImpl implements EventListRepository {
       name: model.name,
       eventDate: model.eventDate,
       description: model.description,
+      isArchived: model.isArchived,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
     );

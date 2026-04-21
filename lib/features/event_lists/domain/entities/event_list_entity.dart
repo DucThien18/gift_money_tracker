@@ -7,6 +7,7 @@ class EventListEntity extends Equatable {
     required this.name,
     this.eventDate,
     this.description,
+    this.isArchived = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -16,6 +17,7 @@ class EventListEntity extends Equatable {
   final String name;
   final DateTime? eventDate;
   final String? description;
+  final bool isArchived;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -25,6 +27,7 @@ class EventListEntity extends Equatable {
     String? name,
     DateTime? eventDate,
     String? description,
+    bool? isArchived,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -34,6 +37,7 @@ class EventListEntity extends Equatable {
       name: name ?? this.name,
       eventDate: eventDate ?? this.eventDate,
       description: description ?? this.description,
+      isArchived: isArchived ?? this.isArchived,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -46,6 +50,7 @@ class EventListEntity extends Equatable {
     name,
     eventDate,
     description,
+    isArchived,
     createdAt,
     updatedAt,
   ];

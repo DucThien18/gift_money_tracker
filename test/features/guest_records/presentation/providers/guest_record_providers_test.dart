@@ -1,12 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:gift_money_tracker/features/event_lists/domain/entities/event_list_entity.dart';
 import 'package:gift_money_tracker/features/guest_records/domain/entities/guest_record_entity.dart';
+import 'package:gift_money_tracker/features/guest_records/domain/entities/guest_record_export_result.dart';
 import 'package:gift_money_tracker/features/guest_records/domain/repositories/guest_record_repository.dart';
+import 'package:gift_money_tracker/features/guest_records/domain/services/guest_record_export_service.dart';
 import 'package:gift_money_tracker/features/guest_records/presentation/providers/guest_record_providers.dart';
 
 void main() {
   late FakeGuestRecordRepository repository;
+  late FakeGuestRecordExportService exportService;
   late ProviderContainer container;
 
   setUp(() {
@@ -22,10 +26,12 @@ void main() {
         updatedAt: DateTime(2026, 4, 1),
       ),
     ]);
+    exportService = FakeGuestRecordExportService();
 
     container = ProviderContainer(
       overrides: <Override>[
         guestRecordRepositoryProvider.overrideWithValue(repository),
+        guestRecordExportServiceProvider.overrideWithValue(exportService),
       ],
     );
     addTearDown(container.dispose);
@@ -113,6 +119,58 @@ void main() {
 
     expect(records, isEmpty);
   });
+
+  test('guestRecordActionController deleteMany xoa nhieu guest record', () async {
+    await repository.create(
+      GuestRecordEntity(
+        id: 0,
+        eventListId: 10,
+        fullName: 'Tran Anh',
+        note: 'Dong nghiep',
+        amount: 300000,
+        isDebtPaid: true,
+        createdAt: DateTime(2026, 4, 2),
+        updatedAt: DateTime(2026, 4, 2),
+      ),
+    );
+
+    final GuestRecordActionController controller = container.read(
+      guestRecordActionControllerProvider.notifier,
+    );
+
+    await controller.deleteMany(eventListId: 10, ids: <int>[1, 2]);
+
+    final List<GuestRecordEntity> records = await container.read(
+      guestRecordsProvider(10).future,
+    );
+
+    expect(records, isEmpty);
+  });
+
+  test('guestRecordExportController export csv tra ve ket qua file', () async {
+    final GuestRecordExportController controller = container.read(
+      guestRecordExportControllerProvider.notifier,
+    );
+    final List<GuestRecordEntity> records = await container.read(
+      guestRecordsProvider(10).future,
+    );
+
+    final GuestRecordExportResult result = await controller.export(
+      eventList: EventListEntity(
+        id: 10,
+        code: 'EV-TEST',
+        name: 'Dam cuoi thu nghiem',
+        createdAt: DateTime(2026, 4, 1),
+        updatedAt: DateTime(2026, 4, 1),
+      ),
+      records: records,
+    );
+
+    expect(result.fileName, 'guest_records.csv');
+    expect(result.filePath, 'C:/exports/guest_records.csv');
+    expect(result.recordCount, 1);
+    expect(exportService.lastExportedRecords, records);
+  });
 }
 
 class FakeGuestRecordRepository implements GuestRecordRepository {
@@ -153,6 +211,11 @@ class FakeGuestRecordRepository implements GuestRecordRepository {
   }
 
   @override
+  Future<void> deleteMany(List<int> ids) async {
+    _items.removeWhere((GuestRecordEntity item) => ids.contains(item.id));
+  }
+
+  @override
   Future<void> deleteByEventListId(int eventListId) async {
     _items.removeWhere(
       (GuestRecordEntity item) => item.eventListId == eventListId,
@@ -183,6 +246,24 @@ class FakeGuestRecordRepository implements GuestRecordRepository {
     );
     _items[index] = entity;
     return entity;
+  }
+}
+
+class FakeGuestRecordExportService implements GuestRecordExportService {
+  List<GuestRecordEntity> lastExportedRecords = <GuestRecordEntity>[];
+
+  @override
+  Future<GuestRecordExportResult> exportCsv({
+    required EventListEntity eventList,
+    required List<GuestRecordEntity> records,
+  }) async {
+    lastExportedRecords = List<GuestRecordEntity>.from(records);
+    return GuestRecordExportResult(
+      fileName: 'guest_records.csv',
+      filePath: 'C:/exports/guest_records.csv',
+      recordCount: records.length,
+      exportedAt: DateTime(2026, 4, 21, 10),
+    );
   }
 }
 

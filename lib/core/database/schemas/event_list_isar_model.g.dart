@@ -38,6 +38,10 @@ const EventListIsarModelSchema = IsarGeneratedSchema(
         type: IsarType.string,
       ),
       IsarPropertySchema(
+        name: 'isArchived',
+        type: IsarType.bool,
+      ),
+      IsarPropertySchema(
         name: 'createdAt',
         type: IsarType.dateTime,
       ),
@@ -59,6 +63,14 @@ const EventListIsarModelSchema = IsarGeneratedSchema(
         name: 'name',
         properties: [
           "name",
+        ],
+        unique: false,
+        hash: false,
+      ),
+      IsarIndexSchema(
+        name: 'isArchived',
+        properties: [
+          "isArchived",
         ],
         unique: false,
         hash: false,
@@ -87,10 +99,11 @@ int serializeEventListIsarModel(IsarWriter writer, EventListIsarModel object) {
       IsarCore.writeString(writer, 4, value);
     }
   }
+  IsarCore.writeBool(writer, 5, object.isArchived);
   IsarCore.writeLong(
-      writer, 5, object.createdAt.toUtc().microsecondsSinceEpoch);
+      writer, 6, object.createdAt.toUtc().microsecondsSinceEpoch);
   IsarCore.writeLong(
-      writer, 6, object.updatedAt.toUtc().microsecondsSinceEpoch);
+      writer, 7, object.updatedAt.toUtc().microsecondsSinceEpoch);
   return object.id;
 }
 
@@ -110,8 +123,9 @@ EventListIsarModel deserializeEventListIsarModel(IsarReader reader) {
     }
   }
   object.description = IsarCore.readString(reader, 4);
+  object.isArchived = IsarCore.readBool(reader, 5);
   {
-    final value = IsarCore.readLong(reader, 5);
+    final value = IsarCore.readLong(reader, 6);
     if (value == -9223372036854775808) {
       object.createdAt =
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true).toLocal();
@@ -121,7 +135,7 @@ EventListIsarModel deserializeEventListIsarModel(IsarReader reader) {
     }
   }
   {
-    final value = IsarCore.readLong(reader, 6);
+    final value = IsarCore.readLong(reader, 7);
     if (value == -9223372036854775808) {
       object.updatedAt =
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true).toLocal();
@@ -155,8 +169,10 @@ dynamic deserializeEventListIsarModelProp(IsarReader reader, int property) {
     case 4:
       return IsarCore.readString(reader, 4);
     case 5:
+      return IsarCore.readBool(reader, 5);
+    case 6:
       {
-        final value = IsarCore.readLong(reader, 5);
+        final value = IsarCore.readLong(reader, 6);
         if (value == -9223372036854775808) {
           return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true).toLocal();
         } else {
@@ -164,9 +180,9 @@ dynamic deserializeEventListIsarModelProp(IsarReader reader, int property) {
               .toLocal();
         }
       }
-    case 6:
+    case 7:
       {
-        final value = IsarCore.readLong(reader, 6);
+        final value = IsarCore.readLong(reader, 7);
         if (value == -9223372036854775808) {
           return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true).toLocal();
         } else {
@@ -186,6 +202,7 @@ sealed class _EventListIsarModelUpdate {
     String? name,
     DateTime? eventDate,
     String? description,
+    bool? isArchived,
     DateTime? createdAt,
     DateTime? updatedAt,
   });
@@ -203,6 +220,7 @@ class _EventListIsarModelUpdateImpl implements _EventListIsarModelUpdate {
     Object? name = ignore,
     Object? eventDate = ignore,
     Object? description = ignore,
+    Object? isArchived = ignore,
     Object? createdAt = ignore,
     Object? updatedAt = ignore,
   }) {
@@ -213,8 +231,9 @@ class _EventListIsarModelUpdateImpl implements _EventListIsarModelUpdate {
           if (name != ignore) 2: name as String?,
           if (eventDate != ignore) 3: eventDate as DateTime?,
           if (description != ignore) 4: description as String?,
-          if (createdAt != ignore) 5: createdAt as DateTime?,
-          if (updatedAt != ignore) 6: updatedAt as DateTime?,
+          if (isArchived != ignore) 5: isArchived as bool?,
+          if (createdAt != ignore) 6: createdAt as DateTime?,
+          if (updatedAt != ignore) 7: updatedAt as DateTime?,
         }) >
         0;
   }
@@ -227,6 +246,7 @@ sealed class _EventListIsarModelUpdateAll {
     String? name,
     DateTime? eventDate,
     String? description,
+    bool? isArchived,
     DateTime? createdAt,
     DateTime? updatedAt,
   });
@@ -244,6 +264,7 @@ class _EventListIsarModelUpdateAllImpl implements _EventListIsarModelUpdateAll {
     Object? name = ignore,
     Object? eventDate = ignore,
     Object? description = ignore,
+    Object? isArchived = ignore,
     Object? createdAt = ignore,
     Object? updatedAt = ignore,
   }) {
@@ -252,8 +273,9 @@ class _EventListIsarModelUpdateAllImpl implements _EventListIsarModelUpdateAll {
       if (name != ignore) 2: name as String?,
       if (eventDate != ignore) 3: eventDate as DateTime?,
       if (description != ignore) 4: description as String?,
-      if (createdAt != ignore) 5: createdAt as DateTime?,
-      if (updatedAt != ignore) 6: updatedAt as DateTime?,
+      if (isArchived != ignore) 5: isArchived as bool?,
+      if (createdAt != ignore) 6: createdAt as DateTime?,
+      if (updatedAt != ignore) 7: updatedAt as DateTime?,
     });
   }
 }
@@ -271,6 +293,7 @@ sealed class _EventListIsarModelQueryUpdate {
     String? name,
     DateTime? eventDate,
     String? description,
+    bool? isArchived,
     DateTime? createdAt,
     DateTime? updatedAt,
   });
@@ -289,6 +312,7 @@ class _EventListIsarModelQueryUpdateImpl
     Object? name = ignore,
     Object? eventDate = ignore,
     Object? description = ignore,
+    Object? isArchived = ignore,
     Object? createdAt = ignore,
     Object? updatedAt = ignore,
   }) {
@@ -297,8 +321,9 @@ class _EventListIsarModelQueryUpdateImpl
       if (name != ignore) 2: name as String?,
       if (eventDate != ignore) 3: eventDate as DateTime?,
       if (description != ignore) 4: description as String?,
-      if (createdAt != ignore) 5: createdAt as DateTime?,
-      if (updatedAt != ignore) 6: updatedAt as DateTime?,
+      if (isArchived != ignore) 5: isArchived as bool?,
+      if (createdAt != ignore) 6: createdAt as DateTime?,
+      if (updatedAt != ignore) 7: updatedAt as DateTime?,
     });
   }
 }
@@ -324,6 +349,7 @@ class _EventListIsarModelQueryBuilderUpdateImpl
     Object? name = ignore,
     Object? eventDate = ignore,
     Object? description = ignore,
+    Object? isArchived = ignore,
     Object? createdAt = ignore,
     Object? updatedAt = ignore,
   }) {
@@ -334,8 +360,9 @@ class _EventListIsarModelQueryBuilderUpdateImpl
         if (name != ignore) 2: name as String?,
         if (eventDate != ignore) 3: eventDate as DateTime?,
         if (description != ignore) 4: description as String?,
-        if (createdAt != ignore) 5: createdAt as DateTime?,
-        if (updatedAt != ignore) 6: updatedAt as DateTime?,
+        if (isArchived != ignore) 5: isArchived as bool?,
+        if (createdAt != ignore) 6: createdAt as DateTime?,
+        if (updatedAt != ignore) 7: updatedAt as DateTime?,
       });
     } finally {
       q.close();
@@ -1095,13 +1122,27 @@ extension EventListIsarModelQueryFilter
   }
 
   QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterFilterCondition>
+      isArchivedEqualTo(
+    bool value,
+  ) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        EqualCondition(
+          property: 5,
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterFilterCondition>
       createdAtEqualTo(
     DateTime value,
   ) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         EqualCondition(
-          property: 5,
+          property: 6,
           value: value,
         ),
       );
@@ -1115,7 +1156,7 @@ extension EventListIsarModelQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         GreaterCondition(
-          property: 5,
+          property: 6,
           value: value,
         ),
       );
@@ -1129,7 +1170,7 @@ extension EventListIsarModelQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         GreaterOrEqualCondition(
-          property: 5,
+          property: 6,
           value: value,
         ),
       );
@@ -1143,7 +1184,7 @@ extension EventListIsarModelQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         LessCondition(
-          property: 5,
+          property: 6,
           value: value,
         ),
       );
@@ -1157,7 +1198,7 @@ extension EventListIsarModelQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         LessOrEqualCondition(
-          property: 5,
+          property: 6,
           value: value,
         ),
       );
@@ -1172,7 +1213,7 @@ extension EventListIsarModelQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         BetweenCondition(
-          property: 5,
+          property: 6,
           lower: lower,
           upper: upper,
         ),
@@ -1187,7 +1228,7 @@ extension EventListIsarModelQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         EqualCondition(
-          property: 6,
+          property: 7,
           value: value,
         ),
       );
@@ -1201,7 +1242,7 @@ extension EventListIsarModelQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         GreaterCondition(
-          property: 6,
+          property: 7,
           value: value,
         ),
       );
@@ -1215,7 +1256,7 @@ extension EventListIsarModelQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         GreaterOrEqualCondition(
-          property: 6,
+          property: 7,
           value: value,
         ),
       );
@@ -1229,7 +1270,7 @@ extension EventListIsarModelQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         LessCondition(
-          property: 6,
+          property: 7,
           value: value,
         ),
       );
@@ -1243,7 +1284,7 @@ extension EventListIsarModelQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         LessOrEqualCondition(
-          property: 6,
+          property: 7,
           value: value,
         ),
       );
@@ -1258,7 +1299,7 @@ extension EventListIsarModelQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         BetweenCondition(
-          property: 6,
+          property: 7,
           lower: lower,
           upper: upper,
         ),
@@ -1364,30 +1405,44 @@ extension EventListIsarModelQuerySortBy
   }
 
   QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterSortBy>
-      sortByCreatedAt() {
+      sortByIsArchived() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(5);
     });
   }
 
   QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterSortBy>
-      sortByCreatedAtDesc() {
+      sortByIsArchivedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(5, sort: Sort.desc);
     });
   }
 
   QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterSortBy>
-      sortByUpdatedAt() {
+      sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(6);
     });
   }
 
   QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterSortBy>
-      sortByUpdatedAtDesc() {
+      sortByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(6, sort: Sort.desc);
+    });
+  }
+
+  QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterSortBy>
+      sortByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(7);
+    });
+  }
+
+  QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterSortBy>
+      sortByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(7, sort: Sort.desc);
     });
   }
 }
@@ -1465,30 +1520,44 @@ extension EventListIsarModelQuerySortThenBy
   }
 
   QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterSortBy>
-      thenByCreatedAt() {
+      thenByIsArchived() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(5);
     });
   }
 
   QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterSortBy>
-      thenByCreatedAtDesc() {
+      thenByIsArchivedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(5, sort: Sort.desc);
     });
   }
 
   QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterSortBy>
-      thenByUpdatedAt() {
+      thenByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(6);
     });
   }
 
   QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterSortBy>
-      thenByUpdatedAtDesc() {
+      thenByCreatedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(6, sort: Sort.desc);
+    });
+  }
+
+  QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterSortBy>
+      thenByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(7);
+    });
+  }
+
+  QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterSortBy>
+      thenByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(7, sort: Sort.desc);
     });
   }
 }
@@ -1524,16 +1593,23 @@ extension EventListIsarModelQueryWhereDistinct
   }
 
   QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterDistinct>
-      distinctByCreatedAt() {
+      distinctByIsArchived() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(5);
     });
   }
 
   QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterDistinct>
-      distinctByUpdatedAt() {
+      distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(6);
+    });
+  }
+
+  QueryBuilder<EventListIsarModel, EventListIsarModel, QAfterDistinct>
+      distinctByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(7);
     });
   }
 }
@@ -1572,17 +1648,23 @@ extension EventListIsarModelQueryProperty1
     });
   }
 
-  QueryBuilder<EventListIsarModel, DateTime, QAfterProperty>
-      createdAtProperty() {
+  QueryBuilder<EventListIsarModel, bool, QAfterProperty> isArchivedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(5);
     });
   }
 
   QueryBuilder<EventListIsarModel, DateTime, QAfterProperty>
-      updatedAtProperty() {
+      createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(6);
+    });
+  }
+
+  QueryBuilder<EventListIsarModel, DateTime, QAfterProperty>
+      updatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(7);
     });
   }
 }
@@ -1621,17 +1703,24 @@ extension EventListIsarModelQueryProperty2<R>
     });
   }
 
-  QueryBuilder<EventListIsarModel, (R, DateTime), QAfterProperty>
-      createdAtProperty() {
+  QueryBuilder<EventListIsarModel, (R, bool), QAfterProperty>
+      isArchivedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(5);
     });
   }
 
   QueryBuilder<EventListIsarModel, (R, DateTime), QAfterProperty>
-      updatedAtProperty() {
+      createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(6);
+    });
+  }
+
+  QueryBuilder<EventListIsarModel, (R, DateTime), QAfterProperty>
+      updatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(7);
     });
   }
 }
@@ -1672,17 +1761,24 @@ extension EventListIsarModelQueryProperty3<R1, R2>
     });
   }
 
-  QueryBuilder<EventListIsarModel, (R1, R2, DateTime), QOperations>
-      createdAtProperty() {
+  QueryBuilder<EventListIsarModel, (R1, R2, bool), QOperations>
+      isArchivedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(5);
     });
   }
 
   QueryBuilder<EventListIsarModel, (R1, R2, DateTime), QOperations>
-      updatedAtProperty() {
+      createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addProperty(6);
+    });
+  }
+
+  QueryBuilder<EventListIsarModel, (R1, R2, DateTime), QOperations>
+      updatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addProperty(7);
     });
   }
 }

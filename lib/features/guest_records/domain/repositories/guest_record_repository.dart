@@ -8,5 +8,6 @@ abstract class GuestRecordRepository {
   Future<GuestRecordEntity?> getById(int id);
   Future<GuestRecordEntity> update(GuestRecordEntity entity);
   Future<void> delete(int id);
+  Future<void> deleteMany(List<int> ids);
   Future<void> deleteByEventListId(int eventListId);
 }

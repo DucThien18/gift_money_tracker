@@ -19,6 +19,7 @@ import '../../../event_lists/presentation/widgets/event_form_sheet.dart';
 import '../../../excel_import/presentation/pages/excel_import_page.dart';
 import '../../../search_sort/presentation/providers/search_sort_provider.dart';
 import '../../domain/entities/guest_record_entity.dart';
+import '../../domain/entities/guest_record_export_result.dart';
 import '../providers/guest_record_providers.dart';
 
 class GuestRecordsPage extends ConsumerStatefulWidget {
@@ -35,6 +36,8 @@ class GuestRecordsPage extends ConsumerStatefulWidget {
 class _GuestRecordsPageState extends ConsumerState<GuestRecordsPage> {
   late final TextEditingController _searchController;
   late final Debounce _searchDebounce;
+  bool _isSelectionMode = false;
+  final Set<int> _selectedRecordIds = <int>{};
 
   @override
   void initState() {
@@ -62,16 +65,21 @@ class _GuestRecordsPageState extends ConsumerState<GuestRecordsPage> {
     );
     final searchState = ref.watch(searchSortProvider);
     final guestActionState = ref.watch(guestRecordActionControllerProvider);
+    final exportState = ref.watch(guestRecordExportControllerProvider);
     final eventActionState = ref.watch(eventListActionControllerProvider);
     final bool isBusy =
-        guestActionState.isLoading || eventActionState.isLoading;
+        guestActionState.isLoading ||
+        eventActionState.isLoading ||
+        exportState.isLoading;
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: isBusy ? null : _openCreateGuestSheet,
-        icon: const Icon(Icons.person_add_alt_1_rounded),
-        label: const Text('Thêm khách'),
-      ),
+      floatingActionButton: _isSelectionMode
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: isBusy ? null : _openCreateGuestSheet,
+              icon: const Icon(Icons.person_add_alt_1_rounded),
+              label: const Text('Thêm khách'),
+            ),
       body: AppGradientBackground(
         child: SafeArea(
           child: eventAsync.when(
@@ -99,6 +107,7 @@ class _GuestRecordsPageState extends ConsumerState<GuestRecordsPage> {
                           context: context,
                           event: event,
                           overviewAsync: overviewAsync,
+                          recordsAsync: recordsAsync,
                           searchState: searchState,
                           isBusy: isBusy,
                         ),
@@ -132,9 +141,13 @@ class _GuestRecordsPageState extends ConsumerState<GuestRecordsPage> {
     required BuildContext context,
     required EventListEntity event,
     required AsyncValue<EventListOverview> overviewAsync,
+    required AsyncValue<List<GuestRecordEntity>> recordsAsync,
     required SearchSortState searchState,
     required bool isBusy,
   }) {
+    final List<GuestRecordEntity> visibleRecords =
+        recordsAsync.valueOrNull ?? const <GuestRecordEntity>[];
+
     return <Widget>[
       Row(
         children: <Widget>[
@@ -167,7 +180,9 @@ class _GuestRecordsPageState extends ConsumerState<GuestRecordsPage> {
           ),
           const SizedBox(width: AppSpacing.xs),
           IconButton.filledTonal(
-            onPressed: isBusy ? null : () => _openEditEventSheet(event),
+            onPressed: isBusy || _isSelectionMode
+                ? null
+                : () => _openEditEventSheet(event),
             icon: const Icon(Icons.edit_rounded),
             tooltip: 'Sửa sự kiện',
           ),
@@ -187,6 +202,11 @@ class _GuestRecordsPageState extends ConsumerState<GuestRecordsPage> {
                   runSpacing: AppSpacing.xs,
                   children: <Widget>[
                     _Badge(label: event.code, color: AppColors.secondary),
+                    if (event.isArchived)
+                      const _Badge(
+                        label: 'Đã lưu trữ',
+                        color: AppColors.warning,
+                      ),
                     if (event.description?.trim().isNotEmpty == true)
                       _Badge(
                         label: event.description!,
@@ -316,13 +336,94 @@ class _GuestRecordsPageState extends ConsumerState<GuestRecordsPage> {
               ),
             ),
           ),
-          OutlinedButton.icon(
-            onPressed: isBusy ? null : _openImportPage,
-            icon: const Icon(Icons.upload_file_rounded),
-            label: const Text('Import Excel'),
+          Flexible(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xs,
+                alignment: WrapAlignment.end,
+                children: <Widget>[
+                  if (_isSelectionMode)
+                    OutlinedButton.icon(
+                      onPressed: isBusy ? null : _exitSelectionMode,
+                      icon: const Icon(Icons.close_rounded),
+                      label: const Text('Xong'),
+                    )
+                  else ...<Widget>[
+                    OutlinedButton.icon(
+                      onPressed: isBusy ? null : _openImportPage,
+                      icon: const Icon(Icons.upload_file_rounded),
+                      label: const Text('Import Excel'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: isBusy ? null : () => _exportRecords(event),
+                      icon: const Icon(Icons.download_rounded),
+                      label: const Text('Export CSV'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: isBusy || visibleRecords.isEmpty
+                          ? null
+                          : _enterSelectionMode,
+                      icon: const Icon(Icons.checklist_rounded),
+                      label: const Text('Chọn nhiều'),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ],
       ),
+      if (_isSelectionMode) ...<Widget>[
+        const SizedBox(height: AppSpacing.md),
+        GlassPanel(
+          fillColor: Colors.white.withValues(alpha: 0.9),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                'Đã chọn ${_selectedRecordIds.length}/${visibleRecords.length} khách trong danh sách hiện tại.',
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Wrap(
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xs,
+                children: <Widget>[
+                  OutlinedButton.icon(
+                    onPressed: isBusy || visibleRecords.isEmpty
+                        ? null
+                        : () => _selectAllVisibleRecords(visibleRecords),
+                    icon: const Icon(Icons.select_all_rounded),
+                    label: const Text('Chọn tất cả'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: isBusy || _selectedRecordIds.isEmpty
+                        ? null
+                        : _clearSelectedRecords,
+                    icon: const Icon(Icons.deselect_rounded),
+                    label: const Text('Bỏ chọn'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: isBusy || _selectedRecordIds.isEmpty
+                        ? null
+                        : _confirmDeleteSelectedRecords,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.danger,
+                    ),
+                    icon: const Icon(Icons.delete_sweep_rounded),
+                    label: const Text('Xóa đã chọn'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
       const SizedBox(height: AppSpacing.md),
     ];
   }
@@ -334,6 +435,8 @@ class _GuestRecordsPageState extends ConsumerState<GuestRecordsPage> {
   }) {
     return recordsAsync.when(
       data: (List<GuestRecordEntity> records) {
+        _syncSelectionWithVisibleRecords(records);
+
         if (records.isEmpty) {
           return SliverToBoxAdapter(
             child: GlassStatePanel(
@@ -383,7 +486,12 @@ class _GuestRecordsPageState extends ConsumerState<GuestRecordsPage> {
             final GuestRecordEntity record = records[index ~/ 2];
             return _GuestRecordCard(
               record: record,
+              selectionMode: _isSelectionMode,
+              selected: _selectedRecordIds.contains(record.id),
               busy: isBusy,
+              onTap: () => _handleRecordTap(record),
+              onLongPress: () => _handleRecordLongPress(record),
+              onToggleSelected: () => _toggleRecordSelection(record),
               onEdit: () => _openEditGuestSheet(record),
               onDelete: () => _confirmDeleteRecord(record),
             );
@@ -490,6 +598,99 @@ class _GuestRecordsPageState extends ConsumerState<GuestRecordsPage> {
     _searchDebounce.cancel();
     _searchController.clear();
     ref.read(searchSortProvider.notifier).clearKeyword();
+  }
+
+  void _enterSelectionMode() {
+    if (_isSelectionMode) {
+      return;
+    }
+    setState(() {
+      _isSelectionMode = true;
+    });
+  }
+
+  void _exitSelectionMode() {
+    if (!_isSelectionMode && _selectedRecordIds.isEmpty) {
+      return;
+    }
+    setState(() {
+      _isSelectionMode = false;
+      _selectedRecordIds.clear();
+    });
+  }
+
+  void _handleRecordTap(GuestRecordEntity record) {
+    if (!_isSelectionMode) {
+      return;
+    }
+    _toggleRecordSelection(record);
+  }
+
+  void _handleRecordLongPress(GuestRecordEntity record) {
+    if (_isSelectionMode) {
+      _toggleRecordSelection(record);
+      return;
+    }
+
+    setState(() {
+      _isSelectionMode = true;
+      _selectedRecordIds.add(record.id);
+    });
+  }
+
+  void _toggleRecordSelection(GuestRecordEntity record) {
+    setState(() {
+      if (_selectedRecordIds.contains(record.id)) {
+        _selectedRecordIds.remove(record.id);
+      } else {
+        _selectedRecordIds.add(record.id);
+      }
+
+      if (_selectedRecordIds.isEmpty) {
+        _isSelectionMode = false;
+      }
+    });
+  }
+
+  void _selectAllVisibleRecords(List<GuestRecordEntity> records) {
+    setState(() {
+      _isSelectionMode = true;
+      _selectedRecordIds
+        ..clear()
+        ..addAll(records.map((GuestRecordEntity record) => record.id));
+    });
+  }
+
+  void _clearSelectedRecords() {
+    setState(() {
+      _selectedRecordIds.clear();
+      _isSelectionMode = false;
+    });
+  }
+
+  void _syncSelectionWithVisibleRecords(List<GuestRecordEntity> records) {
+    if (_selectedRecordIds.isEmpty) {
+      return;
+    }
+
+    final Set<int> visibleIds = records
+        .map((GuestRecordEntity record) => record.id)
+        .toSet();
+    if (_selectedRecordIds.every(visibleIds.contains)) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _selectedRecordIds.removeWhere((int id) => !visibleIds.contains(id));
+        if (_selectedRecordIds.isEmpty) {
+          _isSelectionMode = false;
+        }
+      });
+    });
   }
 
   Future<void> _refresh() async {
@@ -599,6 +800,112 @@ class _GuestRecordsPageState extends ConsumerState<GuestRecordsPage> {
     await _refreshGuestData(awaitReload: true);
   }
 
+  Future<void> _confirmDeleteSelectedRecords() async {
+    final List<int> selectedIds = _selectedRecordIds.toList(growable: false);
+    if (selectedIds.isEmpty) {
+      return;
+    }
+
+    final bool shouldDelete =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) => AlertDialog(
+            title: const Text('Xóa khách đã chọn?'),
+            content: Text(
+              'Bạn có chắc muốn xóa ${selectedIds.length} khách đang được tích chọn?',
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Hủy'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.danger,
+                ),
+                child: const Text('Xóa tất cả'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!shouldDelete || !mounted) {
+      return;
+    }
+
+    try {
+      await ref
+          .read(guestRecordActionControllerProvider.notifier)
+          .deleteMany(eventListId: widget.eventListId, ids: selectedIds);
+      await _refreshGuestData(awaitReload: true);
+      _exitSelectionMode();
+      _showSnackBar('Đã xóa ${selectedIds.length} khách đã chọn.');
+    } catch (_) {
+      if (mounted) {
+        _showSnackBar('Không thể xóa nhiều khách. Vui lòng thử lại.');
+      }
+    }
+  }
+
+  Future<void> _exportRecords(EventListEntity event) async {
+    try {
+      final List<GuestRecordEntity> records = await ref.read(
+        filteredGuestRecordsProvider(widget.eventListId).future,
+      );
+
+      if (records.isEmpty) {
+        _showSnackBar('Không có dữ liệu để export theo bộ lọc hiện tại.');
+        return;
+      }
+
+      final GuestRecordExportResult result = await ref
+          .read(guestRecordExportControllerProvider.notifier)
+          .export(eventList: event, records: records);
+
+      if (!mounted) {
+        return;
+      }
+
+      await showDialog<void>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Đã xuất file CSV'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Đã xuất ${result.recordCount} dòng từ sự kiện "${event.name}".',
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                const Text(
+                  'File đã lưu tại:',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+                SelectableText(result.filePath),
+              ],
+            ),
+            actions: <Widget>[
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Đóng'),
+              ),
+            ],
+          );
+        },
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showSnackBar('Không thể export CSV. Vui lòng thử lại.');
+    }
+  }
+
   Future<void> _refreshGuestData({required bool awaitReload}) async {
     ref.invalidate(eventListOverviewProvider(widget.eventListId));
     ref.invalidate(guestRecordsProvider(widget.eventListId));
@@ -624,9 +931,7 @@ class _GuestRecordsPageState extends ConsumerState<GuestRecordsPage> {
     final String order = state.sortOrder == SortOrder.ascending ? 'A-Z' : 'Z-A';
     if (state.sortField == SortField.amount ||
         state.sortField == SortField.createdAt) {
-      return state.sortOrder == SortOrder.ascending
-          ? '$base'
-          : '$base';
+      return base;
     }
     return '$base $order';
   }
@@ -784,12 +1089,22 @@ class _GuestRecordCardSkeleton extends StatelessWidget {
 class _GuestRecordCard extends StatelessWidget {
   const _GuestRecordCard({
     required this.record,
+    required this.selectionMode,
+    required this.selected,
+    required this.onTap,
+    required this.onLongPress,
+    required this.onToggleSelected,
     required this.onEdit,
     required this.onDelete,
     required this.busy,
   });
 
   final GuestRecordEntity record;
+  final bool selectionMode;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+  final VoidCallback onToggleSelected;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final bool busy;
@@ -799,114 +1114,129 @@ class _GuestRecordCard extends StatelessWidget {
     final bool debtPaid = record.isDebtPaid;
     final Color badgeColor = debtPaid ? AppColors.success : AppColors.danger;
 
-    return GlassPanel(
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.primary.withValues(alpha: 0.14),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              record.fullName.isEmpty ? '?' : record.fullName[0].toUpperCase(),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primary,
+    return GestureDetector(
+      onTap: selectionMode ? onTap : null,
+      onLongPress: busy ? null : onLongPress,
+      child: GlassPanel(
+        padding: const EdgeInsets.all(14),
+        fillColor: selected
+            ? AppColors.primary.withValues(alpha: 0.18)
+            : AppColors.glassFill,
+        child: Row(
+          children: <Widget>[
+            if (selectionMode) ...<Widget>[
+              Checkbox(
+                value: selected,
+                onChanged: busy ? null : (_) => onToggleSelected(),
+              ),
+              const SizedBox(width: AppSpacing.xs),
+            ],
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withValues(alpha: 0.14),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                record.fullName.isEmpty ? '?' : record.fullName[0].toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  record.fullName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  record.note.isEmpty ? '' : record.note,
-                  style: const TextStyle(color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: badgeColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    debtPaid ? 'Đã trả nợ' : 'Chưa trả nợ',
-                    style: TextStyle(
-                      color: badgeColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    record.fullName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    record.note.isEmpty ? '' : record.note,
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: badgeColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      debtPaid ? 'Đã trả nợ' : 'Chưa trả nợ',
+                      style: TextStyle(
+                        color: badgeColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                Text(
+                  CurrencyFormatter.formatVnd(record.amount),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: debtPaid ? AppColors.success : AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  DateFormat('dd/MM').format(record.createdAt),
+                  style: const TextStyle(color: AppColors.textHint),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: <Widget>[
-              Text(
-                CurrencyFormatter.formatVnd(record.amount),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: debtPaid ? AppColors.success : AppColors.textPrimary,
+            if (!selectionMode)
+              PopupMenuButton<_GuestRecordAction>(
+                enabled: !busy,
+                tooltip: 'Hành động',
+                onSelected: (_GuestRecordAction action) {
+                  switch (action) {
+                    case _GuestRecordAction.edit:
+                      onEdit();
+                    case _GuestRecordAction.delete:
+                      onDelete();
+                  }
+                },
+                itemBuilder: (BuildContext context) =>
+                    const <PopupMenuEntry<_GuestRecordAction>>[
+                      PopupMenuItem<_GuestRecordAction>(
+                        value: _GuestRecordAction.edit,
+                        child: Text('Sửa'),
+                      ),
+                      PopupMenuItem<_GuestRecordAction>(
+                        value: _GuestRecordAction.delete,
+                        child: Text('Xóa'),
+                      ),
+                    ],
+                icon: const Icon(
+                  Icons.more_horiz_rounded,
+                  color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                DateFormat('dd/MM').format(record.createdAt),
-                style: const TextStyle(color: AppColors.textHint),
-              ),
-            ],
-          ),
-          PopupMenuButton<_GuestRecordAction>(
-            enabled: !busy,
-            tooltip: 'Hành động',
-            onSelected: (_GuestRecordAction action) {
-              switch (action) {
-                case _GuestRecordAction.edit:
-                  onEdit();
-                case _GuestRecordAction.delete:
-                  onDelete();
-              }
-            },
-            itemBuilder: (BuildContext context) =>
-                const <PopupMenuEntry<_GuestRecordAction>>[
-                  PopupMenuItem<_GuestRecordAction>(
-                    value: _GuestRecordAction.edit,
-                    child: Text('Sửa'),
-                  ),
-                  PopupMenuItem<_GuestRecordAction>(
-                    value: _GuestRecordAction.delete,
-                    child: Text('Xóa'),
-                  ),
-                ],
-            icon: const Icon(
-              Icons.more_horiz_rounded,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

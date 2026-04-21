@@ -16,6 +16,8 @@ class EventListIsarModel {
 
   DateTime? eventDate;
   String? description;
+  @Index()
+  bool isArchived = false;
   DateTime createdAt = DateTime.now();
   DateTime updatedAt = DateTime.now();
 }

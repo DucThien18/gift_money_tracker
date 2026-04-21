@@ -46,10 +46,14 @@ class _EventListsPageState extends ConsumerState<EventListsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final allEventsAsync = ref.watch(allEventListsProvider);
+    final archivedCountAsync = ref.watch(archivedEventCountProvider);
     final eventsAsync = ref.watch(filteredEventListsProvider);
     final summaryAsync = ref.watch(eventListDashboardSummaryProvider);
     final actionState = ref.watch(eventListActionControllerProvider);
     final query = ref.watch(eventListSearchQueryProvider);
+    final showArchived = ref.watch(eventListShowArchivedProvider);
+    final archivedCount = archivedCountAsync.valueOrNull ?? 0;
 
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
@@ -144,28 +148,71 @@ class _EventListsPageState extends ConsumerState<EventListsPage> {
                       const SizedBox(height: AppSpacing.lg),
                       GlassPanel(
                         padding: const EdgeInsets.all(14),
-                        child: ValueListenableBuilder<TextEditingValue>(
-                          valueListenable: _searchController,
-                          builder: (
-                            BuildContext context,
-                            TextEditingValue value,
-                            _,
-                          ) {
-                            return TextField(
-                              controller: _searchController,
-                              onChanged: _onSearchChanged,
-                              decoration: InputDecoration(
-                                hintText: 'Tìm theo tên, mã sự kiện, mô tả...',
-                                prefixIcon: const Icon(Icons.search_rounded),
-                                suffixIcon: value.text.isEmpty
-                                    ? null
-                                    : IconButton(
-                                        onPressed: _clearSearchQuery,
-                                        icon: const Icon(Icons.close_rounded),
-                                      ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            ValueListenableBuilder<TextEditingValue>(
+                              valueListenable: _searchController,
+                              builder: (
+                                BuildContext context,
+                                TextEditingValue value,
+                                _,
+                              ) {
+                                return TextField(
+                                  controller: _searchController,
+                                  onChanged: _onSearchChanged,
+                                  decoration: InputDecoration(
+                                    hintText:
+                                        'Tìm theo tên, mã sự kiện, mô tả...',
+                                    prefixIcon: const Icon(Icons.search_rounded),
+                                    suffixIcon: value.text.isEmpty
+                                        ? null
+                                        : IconButton(
+                                            onPressed: _clearSearchQuery,
+                                            icon: const Icon(
+                                              Icons.close_rounded,
+                                            ),
+                                          ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            archivedCountAsync.when(
+                              data: (int count) => Wrap(
+                                spacing: AppSpacing.xs,
+                                runSpacing: AppSpacing.xs,
+                                children: <Widget>[
+                                  FilterChip(
+                                    selected: showArchived,
+                                    onSelected: (bool value) {
+                                      ref
+                                          .read(
+                                            eventListShowArchivedProvider
+                                                .notifier,
+                                          )
+                                          .state = value;
+                                    },
+                                    label: Text(
+                                      count > 0
+                                          ? 'Hiện sự kiện đã lưu trữ ($count)'
+                                          : 'Hiện sự kiện đã lưu trữ',
+                                    ),
+                                  ),
+                                  if (!showArchived && count > 0)
+                                    const _Badge(
+                                      label: 'Đang ẩn mục đã lưu trữ',
+                                      color: AppColors.warning,
+                                    ),
+                                ],
                               ),
-                            );
-                          },
+                              loading: () => const GlassSkeleton(
+                                width: 180,
+                                height: 28,
+                              ),
+                              error: (_, _) => const SizedBox.shrink(),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: AppSpacing.lg),
@@ -206,19 +253,47 @@ class _EventListsPageState extends ConsumerState<EventListsPage> {
                   sliver: eventsAsync.when(
                     data: (List<EventListEntity> items) {
                       if (items.isEmpty) {
+                        final bool hasOnlyArchived =
+                            !showArchived &&
+                            query.trim().isEmpty &&
+                            archivedCount > 0 &&
+                            (allEventsAsync.valueOrNull?.isNotEmpty ?? false);
+
                         return SliverToBoxAdapter(
                           child: GlassStatePanel(
                             key: ValueKey<String>(query),
                             icon: Icons.inbox_rounded,
-                            title: query.trim().isNotEmpty
+                            title: hasOnlyArchived
+                                ? 'Danh sách đang được lưu trữ'
+                                : query.trim().isNotEmpty
                                 ? 'Không có kết quả phù hợp'
                                 : 'Chưa có sự kiện nào',
-                            message: query.trim().isNotEmpty
+                            message: hasOnlyArchived
+                                ? 'Hiện có $archivedCount sự kiện đã được lưu trữ. Bật bộ lọc để xem hoặc khôi phục lại.'
+                                : query.trim().isNotEmpty
                                 ? 'Thử lại từ khóa tìm kiếm hoặc tạo sự kiện mới.'
                                 : 'Tạo sự kiện đầu tiên để bắt đầu quản lý tiền mừng.',
-                            actions: query.trim().isNotEmpty
+                            actions:
+                                query.trim().isNotEmpty && !hasOnlyArchived
                                 ? const <Widget>[]
                                 : <Widget>[
+                                    if (hasOnlyArchived)
+                                      OutlinedButton.icon(
+                                        onPressed: () {
+                                          ref
+                                              .read(
+                                                eventListShowArchivedProvider
+                                                    .notifier,
+                                              )
+                                              .state = true;
+                                        },
+                                        icon: const Icon(
+                                          Icons.inventory_2_rounded,
+                                        ),
+                                        label: const Text(
+                                          'Hiện sự kiện đã lưu trữ',
+                                        ),
+                                      ),
                                     FilledButton.icon(
                                       onPressed: actionState.isLoading
                                           ? null
@@ -250,6 +325,8 @@ class _EventListsPageState extends ConsumerState<EventListsPage> {
                               arguments: item.id,
                             ),
                             onEdit: () => _openEditEventSheet(context, item),
+                            onToggleArchived: () =>
+                                _toggleArchive(context, ref, item),
                             onDelete: () => _confirmDelete(context, ref, item),
                           );
                         }, childCount: items.length * 2 - 1),
@@ -278,6 +355,8 @@ class _EventListsPageState extends ConsumerState<EventListsPage> {
 
   Future<void> _refresh() async {
     ref.invalidate(allEventListsProvider);
+    ref.invalidate(visibleEventListsProvider);
+    ref.invalidate(archivedEventCountProvider);
     ref.invalidate(filteredEventListsProvider);
     ref.invalidate(eventListDashboardSummaryProvider);
     await ref.read(filteredEventListsProvider.future);
@@ -296,6 +375,60 @@ class _EventListsPageState extends ConsumerState<EventListsPage> {
     _searchDebounce.cancel();
     _searchController.clear();
     ref.read(eventListSearchQueryProvider.notifier).state = '';
+  }
+
+  Future<void> _toggleArchive(
+    BuildContext context,
+    WidgetRef ref,
+    EventListEntity eventList,
+  ) async {
+    try {
+      final EventListEntity updated = eventList.isArchived
+          ? await ref
+                .read(eventListActionControllerProvider.notifier)
+                .restore(eventList)
+          : await ref
+                .read(eventListActionControllerProvider.notifier)
+                .archive(eventList);
+
+      if (!context.mounted) {
+        return;
+      }
+
+      final bool showArchived = ref.read(eventListShowArchivedProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            updated.isArchived
+                ? 'Đã lưu trữ "${updated.name}".'
+                : 'Đã khôi phục "${updated.name}".',
+          ),
+          action: updated.isArchived && !showArchived
+              ? SnackBarAction(
+                  label: 'Hiện',
+                  onPressed: () {
+                    ref.read(eventListShowArchivedProvider.notifier).state =
+                        true;
+                  },
+                )
+              : null,
+        ),
+      );
+    } catch (_) {
+      if (!context.mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            eventList.isArchived
+                ? 'Không thể khôi phục sự kiện. Vui lòng thử lại.'
+                : 'Không thể lưu trữ sự kiện. Vui lòng thử lại.',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _openCreateEventSheet(BuildContext context) async {
@@ -541,6 +674,7 @@ class _EventCard extends ConsumerWidget {
     required this.busy,
     required this.onOpen,
     required this.onEdit,
+    required this.onToggleArchived,
     required this.onDelete,
   });
 
@@ -548,6 +682,7 @@ class _EventCard extends ConsumerWidget {
   final bool busy;
   final VoidCallback onOpen;
   final VoidCallback onEdit;
+  final VoidCallback onToggleArchived;
   final VoidCallback onDelete;
 
   @override
@@ -606,15 +741,26 @@ class _EventCard extends ConsumerWidget {
                     if (value == 'edit') {
                       onEdit();
                     }
+                    if (value == 'archive') {
+                      onToggleArchived();
+                    }
                     if (value == 'delete') {
                       onDelete();
                     }
                   },
                   itemBuilder: (BuildContext context) =>
-                      const <PopupMenuEntry<String>>[
+                      <PopupMenuEntry<String>>[
                         PopupMenuItem<String>(
                           value: 'edit',
                           child: Text('Sửa sự kiện'),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'archive',
+                          child: Text(
+                            eventList.isArchived
+                                ? 'Khôi phục sự kiện'
+                                : 'Lưu trữ sự kiện',
+                          ),
                         ),
                         PopupMenuItem<String>(
                           value: 'delete',
@@ -630,6 +776,11 @@ class _EventCard extends ConsumerWidget {
               runSpacing: AppSpacing.xs,
               children: <Widget>[
                 _Badge(label: eventList.code, color: AppColors.secondary),
+                if (eventList.isArchived)
+                  const _Badge(
+                    label: 'Đã lưu trữ',
+                    color: AppColors.warning,
+                  ),
                 _Badge(
                   label: eventList.eventDate == null
                       ? 'Chưa chọn ngày diễn ra'

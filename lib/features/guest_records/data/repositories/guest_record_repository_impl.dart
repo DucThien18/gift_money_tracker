@@ -56,6 +56,11 @@ class GuestRecordRepositoryImpl implements GuestRecordRepository {
   }
 
   @override
+  Future<void> deleteMany(List<int> ids) {
+    return _localDatasource.deleteMany(ids);
+  }
+
+  @override
   Future<void> deleteByEventListId(int eventListId) {
     return _localDatasource.deleteByEventListId(eventListId);
   }

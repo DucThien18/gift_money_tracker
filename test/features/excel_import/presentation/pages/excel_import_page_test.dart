@@ -95,12 +95,15 @@ void main() {
     await _pumpPage(tester, notifier);
 
     expect(find.text('Import Excel'), findsOneWidget);
-    expect(find.text('Kiem tra preview va import vao su kien #42.'), findsOneWidget);
-    expect(find.text('Chua co du lieu preview'), findsOneWidget);
-    expect(find.text('Chon file Excel'), findsOneWidget);
+    expect(
+      find.text('Kiểm tra preview va import vào sự kiện #42.'),
+      findsOneWidget,
+    );
+    expect(find.text('Chưa có dữ liệu preview'), findsOneWidget);
+    expect(find.text('Chọn file Excel'), findsOneWidget);
 
     final ButtonStyleButton confirmButton = tester.widget<ButtonStyleButton>(
-      _buttonByLabel('Xac nhan import'),
+      _buttonByLabel('Xác nhận thêm'),
     );
     expect(confirmButton.onPressed, isNull);
   });
@@ -125,17 +128,17 @@ void main() {
 
     expect(find.text('File: khach-moi.xlsx'), findsOneWidget);
     expect(find.text('1. Nguyen Van A'), findsOneWidget);
-    expect(_buttonByLabel('Lam moi'), findsOneWidget);
+    expect(_buttonByLabel('Làm mới'), findsOneWidget);
 
-    await tester.tap(_buttonByLabel('Lam moi'));
+    await tester.tap(_buttonByLabel('Làm mới'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Chua co du lieu preview'), findsOneWidget);
+    expect(find.text('Chưa có dữ liệu preview'), findsOneWidget);
     expect(find.text('File: khach-moi.xlsx'), findsNothing);
     expect(find.text('1. Nguyen Van A'), findsNothing);
 
     final ButtonStyleButton confirmButton = tester.widget<ButtonStyleButton>(
-      _buttonByLabel('Xac nhan import'),
+      _buttonByLabel('Xác nhận thêm'),
     );
     expect(confirmButton.onPressed, isNull);
   });
@@ -170,16 +173,16 @@ void main() {
 
     await _pumpPage(tester, notifier);
 
-    await tester.tap(_buttonByLabel('Xac nhan import'));
+    await tester.tap(_buttonByLabel('Xác nhận thêm'));
     await tester.pump();
     await tester.pumpAndSettle();
 
-    expect(find.text('Import thanh cong'), findsOneWidget);
+    expect(find.text('Import thành công'), findsOneWidget);
     expect(
-      find.text('Da import thanh cong 2/2 dong hop le vao su kien.'),
+      find.text('Đã thêm thành công 2/2 dòng hợp lệ vào sự kiện.'),
       findsOneWidget,
     );
-    expect(find.text('Quay lai su kien'), findsOneWidget);
+    expect(find.text('Quay lại'), findsOneWidget);
 
     verify(() => mockUseCase.execute(eventListId: 42, bytes: bytes)).called(1);
   });

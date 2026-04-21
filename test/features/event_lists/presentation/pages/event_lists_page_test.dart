@@ -66,22 +66,25 @@ void main() {
         guestRepository: guestRepository,
       );
 
-      expect(find.text('Danh sach su kien'), findsOneWidget);
+      expect(find.text('Danh sách sự kiện'), findsOneWidget);
       expect(find.text('Dam cuoi Lan Anh'), findsOneWidget);
 
       await tester.tap(find.text('Dam cuoi Lan Anh'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Guest records'), findsOneWidget);
-      expect(find.text('Them khach'), findsOneWidget);
+      expect(find.text('Danh sách khách mời'), findsOneWidget);
+      expect(find.text('Thêm khách'), findsOneWidget);
       expect(find.text('Import Excel'), findsOneWidget);
 
       await tester.tap(_buttonByLabel('Import Excel'));
       await tester.pumpAndSettle();
 
       expect(find.text('Import Excel'), findsOneWidget);
-      expect(find.text('Kiem tra preview va import vao su kien #1.'), findsOneWidget);
-      expect(find.text('Chua co du lieu preview'), findsOneWidget);
+      expect(
+        find.text('Kiểm tra preview va import vào sự kiện #1.'),
+        findsOneWidget,
+      );
+      expect(find.text('Chưa có dữ liệu preview'), findsOneWidget);
     },
   );
 
@@ -112,8 +115,8 @@ void main() {
       );
 
       expect(find.text('Sinh nhat Minh'), findsOneWidget);
-      expect(find.text('Chua co guest record'), findsOneWidget);
-      expect(find.text('Them khach dau tien'), findsOneWidget);
+      expect(find.text('Chưa có khách mời nào được thêm vào'), findsOneWidget);
+      expect(find.text('Thêm khách đầu tiên'), findsOneWidget);
       expect(find.text('Import Excel'), findsNWidgets(2));
     },
   );
@@ -143,22 +146,22 @@ void main() {
         guestRepository: guestRepository,
       );
 
-      await tester.tap(_buttonByLabel('Tao su kien'));
+      await tester.tap(_buttonByLabel('Tạo sự kiện mới'));
       await tester.pumpAndSettle();
 
       await tester.enterText(
-        _textFieldByLabel('Ten su kien'),
+        _textFieldByLabel('Tên sự kiện'),
         'Tan gia Hoang Gia',
       );
       await tester.enterText(
-        _textFieldByLabel('Mo ta ngan'),
+        _textFieldByLabel('Mô tả ngắn'),
         'Hang xom than thiet',
       );
-      await tester.tap(_buttonByLabel('Tao va mo'));
+      await tester.tap(_buttonByLabel('Tạo và mở'));
       await tester.pumpAndSettle();
 
       expect(find.text('Tan gia Hoang Gia'), findsOneWidget);
-      expect(find.text('Guest records'), findsOneWidget);
+      expect(find.text('Danh sách khách mời'), findsOneWidget);
 
       final List<EventListEntity> items = await eventRepository.getAll();
       expect(
@@ -198,13 +201,13 @@ void main() {
       await tester.tap(find.text('Dam cuoi Lan Anh'));
       await tester.pumpAndSettle();
 
-      await tester.tap(_buttonByLabel('Them khach'));
+      await tester.tap(_buttonByLabel('Thêm khách'));
       await tester.pumpAndSettle();
 
-      await tester.enterText(_textFieldByLabel('Ten khach'), 'Tran Anh');
-      await tester.enterText(_textFieldByLabel('So tien mung'), '700000');
-      await tester.enterText(_textFieldByLabel('Ghi chu'), 'Dong nghiep');
-      await tester.tap(_buttonByLabel('Them khach').last);
+      await tester.enterText(_textFieldByLabel('Tên khách'), 'Tran Anh');
+      await tester.enterText(_textFieldByLabel('Số tiền mừng'), '700000');
+      await tester.enterText(_textFieldByLabel('Ghi chú'), 'Dong nghiep');
+      await tester.tap(_buttonByLabel('Thêm khách').last);
       await tester.pumpAndSettle();
 
       expect(find.text('Tran Anh'), findsOneWidget);
@@ -263,15 +266,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('1. Tran Anh'), findsOneWidget);
-      expect(find.text('Xac nhan import'), findsOneWidget);
+      expect(find.text('Xác nhận thêm'), findsOneWidget);
 
-      await tester.tap(_buttonByLabel('Xac nhan import'));
+      await tester.tap(_buttonByLabel('Xác nhận thêm'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Import thanh cong'), findsOneWidget);
-      expect(find.text('Quay lai su kien'), findsOneWidget);
+      expect(find.text('Import thành công'), findsOneWidget);
+      expect(find.text('Quay lại'), findsOneWidget);
 
-      await tester.tap(_buttonByLabel('Quay lai su kien'));
+      await tester.tap(_buttonByLabel('Quay lại'));
       await tester.pumpAndSettle();
 
       expect(find.text('Tran Anh'), findsOneWidget);
@@ -343,9 +346,9 @@ void main() {
 
       await tester.tap(_eventPopupMenuButton().at(1));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Xoa su kien'));
+      await tester.tap(find.text('Xóa sự kiện'));
       await tester.pumpAndSettle();
-      await tester.tap(_buttonByLabel('Xoa'));
+      await tester.tap(_buttonByLabel('Xóa'));
       await tester.pumpAndSettle();
 
       expect(find.text('Dam cuoi Lan Anh'), findsNothing);
@@ -386,18 +389,18 @@ void main() {
 
       await tester.tap(_eventPopupMenuButton().first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Sua su kien'));
+      await tester.tap(find.text('Sửa sự kiện'));
       await tester.pumpAndSettle();
 
       await tester.enterText(
-        _textFieldByLabel('Ten su kien'),
+        _textFieldByLabel('Tên sự kiện'),
         'Dam cuoi Lan Anh - Da doi lich',
       );
       await tester.enterText(
-        _textFieldByLabel('Mo ta ngan'),
+        _textFieldByLabel('Mô tả ngắn'),
         'Da doi sang khach san moi',
       );
-      await tester.tap(_buttonByLabel('Luu thay doi'));
+      await tester.tap(_buttonByLabel('Lưu thay đổi'));
       await tester.pumpAndSettle();
 
       expect(find.text('Dam cuoi Lan Anh - Da doi lich'), findsOneWidget);
@@ -406,6 +409,59 @@ void main() {
       final EventListEntity? updated = await eventRepository.getById(1);
       expect(updated?.name, 'Dam cuoi Lan Anh - Da doi lich');
       expect(updated?.description, 'Da doi sang khach san moi');
+    },
+  );
+
+  testWidgets(
+    'EventListsPage luu tru va khoi phuc su kien tu danh sach',
+    (WidgetTester tester) async {
+      final FakeEventListRepository eventRepository = FakeEventListRepository(
+        <EventListEntity>[
+          EventListEntity(
+            id: 1,
+            code: 'EV-WEDDING',
+            name: 'Dam cuoi Lan Anh',
+            description: 'Ho noi',
+            eventDate: DateTime(2026, 4, 20),
+            createdAt: DateTime(2026, 4, 1),
+            updatedAt: DateTime(2026, 4, 2),
+          ),
+        ],
+      );
+      final FakeGuestRecordRepository guestRepository =
+          FakeGuestRecordRepository(<GuestRecordEntity>[]);
+
+      await _pumpEventApp(
+        tester,
+        eventRepository: eventRepository,
+        guestRepository: guestRepository,
+      );
+
+      await tester.tap(_eventPopupMenuButton().first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lưu trữ sự kiện'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dam cuoi Lan Anh'), findsNothing);
+      expect(find.text('Danh sách đang được lưu trữ'), findsOneWidget);
+      expect(find.text('Hiện sự kiện đã lưu trữ'), findsOneWidget);
+
+      await tester.tap(_buttonByLabel('Hiện sự kiện đã lưu trữ'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dam cuoi Lan Anh'), findsOneWidget);
+      expect(find.text('Đã lưu trữ'), findsOneWidget);
+
+      await tester.tap(_eventPopupMenuButton().first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Khôi phục sự kiện'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dam cuoi Lan Anh'), findsOneWidget);
+      expect(find.text('Đã lưu trữ'), findsNothing);
+
+      final EventListEntity? updated = await eventRepository.getById(1);
+      expect(updated?.isArchived, isFalse);
     },
   );
 
@@ -435,13 +491,13 @@ void main() {
         eventListId: 2,
       );
 
-      await tester.tap(_buttonByLabel('Them khach dau tien'));
+      await tester.tap(_buttonByLabel('Thêm khách đầu tiên'));
       await tester.pumpAndSettle();
 
-      await tester.enterText(_textFieldByLabel('Ten khach'), 'Tran Anh');
-      await tester.enterText(_textFieldByLabel('So tien mung'), '700000');
-      await tester.enterText(_textFieldByLabel('Ghi chu'), 'Dong nghiep');
-      await tester.tap(_buttonByLabel('Them khach').last);
+      await tester.enterText(_textFieldByLabel('Tên khách'), 'Tran Anh');
+      await tester.enterText(_textFieldByLabel('Số tiền mừng'), '700000');
+      await tester.enterText(_textFieldByLabel('Ghi chú'), 'Dong nghiep');
+      await tester.tap(_buttonByLabel('Thêm khách').last);
       await tester.pumpAndSettle();
 
       expect(find.text('Tran Anh'), findsOneWidget);
@@ -491,18 +547,104 @@ void main() {
         eventListId: 1,
       );
 
-      await tester.tap(find.byTooltip('Hanh dong').first);
+      await tester.tap(find.byTooltip('Hành động').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Xoa'));
+      await tester.tap(find.text('Xóa'));
       await tester.pumpAndSettle();
-      await tester.tap(_buttonByLabel('Xoa'));
+      await tester.tap(_buttonByLabel('Xóa'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Chua co guest record'), findsOneWidget);
+      expect(find.text('Chưa có khách mời nào được thêm vào'), findsOneWidget);
 
       final List<GuestRecordEntity> guests = await guestRepository
           .getByEventListId(1);
       expect(guests, isEmpty);
+    },
+  );
+
+  testWidgets(
+    'GuestRecordsPage cho phep tich chon nhieu khach va xoa hang loat',
+    (WidgetTester tester) async {
+      final FakeEventListRepository eventRepository = FakeEventListRepository(
+        <EventListEntity>[
+          EventListEntity(
+            id: 1,
+            code: 'EV-WEDDING',
+            name: 'Dam cuoi Lan Anh',
+            description: 'Ho noi',
+            eventDate: DateTime(2026, 4, 20),
+            createdAt: DateTime(2026, 4, 1),
+            updatedAt: DateTime(2026, 4, 2),
+          ),
+        ],
+      );
+      final FakeGuestRecordRepository guestRepository =
+          FakeGuestRecordRepository(<GuestRecordEntity>[
+            GuestRecordEntity(
+              id: 1,
+              eventListId: 1,
+              fullName: 'Nguyen Minh',
+              note: 'Ban than',
+              amount: 500000,
+              isDebtPaid: false,
+              createdAt: DateTime(2026, 4, 2),
+              updatedAt: DateTime(2026, 4, 2),
+            ),
+            GuestRecordEntity(
+              id: 2,
+              eventListId: 1,
+              fullName: 'Tran Anh',
+              note: 'Dong nghiep',
+              amount: 300000,
+              isDebtPaid: true,
+              createdAt: DateTime(2026, 4, 3),
+              updatedAt: DateTime(2026, 4, 3),
+            ),
+            GuestRecordEntity(
+              id: 3,
+              eventListId: 1,
+              fullName: 'Pham Hoa',
+              note: 'Hang xom',
+              amount: 200000,
+              isDebtPaid: false,
+              createdAt: DateTime(2026, 4, 4),
+              updatedAt: DateTime(2026, 4, 4),
+            ),
+          ]);
+
+      await _pumpGuestPage(
+        tester,
+        eventRepository: eventRepository,
+        guestRepository: guestRepository,
+        eventListId: 1,
+      );
+
+      await tester.tap(_buttonByLabel('Chọn nhiều'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Xóa đã chọn'), findsOneWidget);
+
+      await tester.tap(find.text('Nguyen Minh'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Tran Anh'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Đã chọn 2/3 khách trong danh sách hiện tại.'), findsOneWidget);
+
+      await tester.tap(_buttonByLabel('Xóa đã chọn'));
+      await tester.pumpAndSettle();
+      await tester.tap(_buttonByLabel('Xóa tất cả'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nguyen Minh'), findsNothing);
+      expect(find.text('Tran Anh'), findsNothing);
+      expect(find.text('Pham Hoa'), findsOneWidget);
+
+      final List<GuestRecordEntity> guests = await guestRepository
+          .getByEventListId(1);
+      expect(guests.map((GuestRecordEntity item) => item.fullName), <String>[
+        'Pham Hoa',
+      ]);
     },
   );
 
@@ -543,15 +685,15 @@ void main() {
         eventListId: 1,
       );
 
-      await tester.tap(find.byTooltip('Hanh dong').first);
+      await tester.tap(find.byTooltip('Hành động').first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Sua'));
+      await tester.tap(find.text('Sửa'));
       await tester.pumpAndSettle();
 
-      await tester.enterText(_textFieldByLabel('Ten khach'), 'Nguyen Minh moi');
-      await tester.enterText(_textFieldByLabel('So tien mung'), '900000');
-      await tester.enterText(_textFieldByLabel('Ghi chu'), 'Dong nghiep than');
-      await tester.tap(_buttonByLabel('Luu thay doi'));
+      await tester.enterText(_textFieldByLabel('Tên khách'), 'Nguyen Minh moi');
+      await tester.enterText(_textFieldByLabel('Số tiền mừng'), '900000');
+      await tester.enterText(_textFieldByLabel('Ghi chú'), 'Dong nghiep than');
+      await tester.tap(_buttonByLabel('Lưu thay đổi'));
       await tester.pumpAndSettle();
 
       expect(find.text('Nguyen Minh moi'), findsOneWidget);
@@ -783,6 +925,11 @@ class FakeGuestRecordRepository implements GuestRecordRepository {
   @override
   Future<void> delete(int id) async {
     _items.removeWhere((GuestRecordEntity item) => item.id == id);
+  }
+
+  @override
+  Future<void> deleteMany(List<int> ids) async {
+    _items.removeWhere((GuestRecordEntity item) => ids.contains(item.id));
   }
 
   @override

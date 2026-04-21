@@ -85,6 +85,18 @@ class GuestRecordLocalDatasource {
     });
   }
 
+  Future<void> deleteMany(List<int> ids) async {
+    if (ids.isEmpty) {
+      return;
+    }
+
+    await Future<void>.sync(() {
+      _isar.write((isar) {
+        isar.guestRecordIsarModels.deleteAll(ids);
+      });
+    });
+  }
+
   Future<void> deleteByEventListId(int eventListId) async {
     await Future<void>.sync(() {
       _isar.write((isar) {

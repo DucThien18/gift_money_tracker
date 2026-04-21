@@ -3,15 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/database/isar_service.dart';
 import '../../data/datasources/guest_record_local_datasource.dart';
 import '../../data/repositories/guest_record_repository_impl.dart';
+import '../../data/services/guest_record_csv_export_service.dart';
 import '../../domain/entities/guest_record_entity.dart';
+import '../../domain/entities/guest_record_export_result.dart';
 import '../../domain/repositories/guest_record_repository.dart';
+import '../../domain/services/guest_record_export_service.dart';
 import '../../domain/usecases/create_guest_record_usecase.dart';
+import '../../domain/usecases/delete_guest_records_usecase.dart';
 import '../../domain/usecases/delete_guest_record_usecase.dart';
 import '../../domain/usecases/delete_guest_records_by_event_list_id_usecase.dart';
+import '../../domain/usecases/export_guest_records_csv_usecase.dart';
 import '../../domain/usecases/get_all_guest_records_usecase.dart';
 import '../../domain/usecases/get_guest_record_by_id_usecase.dart';
 import '../../domain/usecases/get_guest_records_by_event_list_id_usecase.dart';
 import '../../domain/usecases/update_guest_record_usecase.dart';
+import '../../../event_lists/domain/entities/event_list_entity.dart';
 
 final guestRecordLocalDatasourceProvider = Provider<GuestRecordLocalDatasource>(
   (ref) {
@@ -23,6 +29,12 @@ final guestRecordLocalDatasourceProvider = Provider<GuestRecordLocalDatasource>(
 final guestRecordRepositoryProvider = Provider<GuestRecordRepository>((ref) {
   final datasource = ref.watch(guestRecordLocalDatasourceProvider);
   return GuestRecordRepositoryImpl(datasource);
+});
+
+final guestRecordExportServiceProvider = Provider<GuestRecordExportService>((
+  ref,
+) {
+  return GuestRecordCsvExportService();
 });
 
 final createGuestRecordUsecaseProvider = Provider<CreateGuestRecordUsecase>((
@@ -66,10 +78,23 @@ final deleteGuestRecordUsecaseProvider = Provider<DeleteGuestRecordUsecase>((
   return DeleteGuestRecordUsecase(repository);
 });
 
+final deleteGuestRecordsUsecaseProvider = Provider<DeleteGuestRecordsUsecase>((
+  ref,
+) {
+  final repository = ref.watch(guestRecordRepositoryProvider);
+  return DeleteGuestRecordsUsecase(repository);
+});
+
 final deleteGuestRecordsByEventListIdUsecaseProvider =
     Provider<DeleteGuestRecordsByEventListIdUsecase>((ref) {
       final repository = ref.watch(guestRecordRepositoryProvider);
       return DeleteGuestRecordsByEventListIdUsecase(repository);
+    });
+
+final exportGuestRecordsCsvUsecaseProvider =
+    Provider<ExportGuestRecordsCsvUsecase>((ref) {
+      final exportService = ref.watch(guestRecordExportServiceProvider);
+      return ExportGuestRecordsCsvUsecase(exportService);
     });
 
 final guestRecordsProvider =
@@ -84,6 +109,13 @@ final guestRecordActionControllerProvider =
     StateNotifierProvider<GuestRecordActionController, AsyncValue<void>>((ref) {
       return GuestRecordActionController(ref);
     });
+
+final guestRecordExportControllerProvider = StateNotifierProvider<
+  GuestRecordExportController,
+  AsyncValue<GuestRecordExportResult?>
+>((ref) {
+  return GuestRecordExportController(ref);
+});
 
 class GuestRecordActionController extends StateNotifier<AsyncValue<void>> {
   GuestRecordActionController(this.ref) : super(const AsyncData(null));
@@ -130,7 +162,52 @@ class GuestRecordActionController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  Future<void> deleteMany({
+    required int eventListId,
+    required List<int> ids,
+  }) async {
+    if (ids.isEmpty) {
+      return;
+    }
+
+    state = const AsyncLoading();
+    try {
+      await ref.read(deleteGuestRecordsUsecaseProvider)(ids);
+      _refreshCollections(eventListId);
+      state = const AsyncData(null);
+    } catch (error, stackTrace) {
+      state = AsyncError(error, stackTrace);
+      rethrow;
+    }
+  }
+
   void _refreshCollections(int eventListId) {
     ref.invalidate(guestRecordsProvider(eventListId));
+  }
+}
+
+class GuestRecordExportController
+    extends StateNotifier<AsyncValue<GuestRecordExportResult?>> {
+  GuestRecordExportController(this.ref) : super(const AsyncData(null));
+
+  final Ref ref;
+
+  Future<GuestRecordExportResult> export({
+    required EventListEntity eventList,
+    required List<GuestRecordEntity> records,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      final GuestRecordExportResult result = await ref
+          .read(exportGuestRecordsCsvUsecaseProvider)(
+            eventList: eventList,
+            records: records,
+          );
+      state = AsyncData(result);
+      return result;
+    } catch (error, stackTrace) {
+      state = AsyncError(error, stackTrace);
+      rethrow;
+    }
   }
 }

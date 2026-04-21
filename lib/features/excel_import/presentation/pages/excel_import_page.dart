@@ -352,7 +352,7 @@ class _PreviewRowTile extends StatelessWidget {
     final bool isValid = row.isValid;
     final Color accentColor = isValid ? AppColors.success : AppColors.danger;
     final String displayName =
-        _firstNonEmpty(row.parsedFullName, row.fullNameRaw) ?? '(trong ten)';
+        _firstNonEmpty(row.parsedFullName, row.fullNameRaw) ?? '(Tên trống)';
     final String? displayNote = _firstNonEmpty(row.parsedNote, row.noteRaw);
     final String amountLabel = row.parsedAmount == null
         ? (_firstNonEmpty(row.amountRaw) ?? 'Số tiền không hợp lệ')
@@ -401,7 +401,7 @@ class _PreviewRowTile extends StatelessWidget {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     _StatusBadge(
-                      label: isValid ? 'Hợp lệ' : 'Cần xử lý',
+                      label: isValid ? 'Hợp lệ' : 'Lỗi',
                       color: accentColor,
                     ),
                   ],
@@ -571,10 +571,10 @@ Widget _buildBottomActionIcon(ExcelImportState state, bool isBusy) {
 
   return const Icon(Icons.cloud_upload_rounded);
 }
-
+ 
 String _bottomActionLabel(ExcelImportState state, bool isBusy) {
   if (state.status == ImportStatus.success) {
-    return 'Quay lại sự kiện';
+    return 'Quay lại';
   }
 
   if (isBusy) {
@@ -593,15 +593,15 @@ String _bottomActionLabel(ExcelImportState state, bool isBusy) {
     }
   }
 
-  return 'Xác nhận import';
+  return 'Xác nhận thêm';
 }
 
 String _buildSuccessMessage(ExcelImportState state) {
   final result = state.importResult!;
   if (result.skippedCount > 0) {
-    return 'Đã import ${result.importedCount}/${result.totalRows} dòng và bỏ qua ${result.skippedCount} dòng không hợp lệ.';
+    return 'Đã thêm ${result.importedCount}/${result.totalRows} dòng và bỏ qua ${result.skippedCount} dòng không hợp lệ.';
   }
-  return 'Đã import thành công ${result.importedCount}/${result.totalRows} dòng hợp lệ vào sự kiện.';
+  return 'Đã thêm thành công ${result.importedCount}/${result.totalRows} dòng hợp lệ vào sự kiện.';
 }
 
 String? _firstNonEmpty(String? first, [String? second]) {
